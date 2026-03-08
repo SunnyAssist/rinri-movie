@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抽選ルーレットゲーム</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Yu Gothic UI", "Hiragino Sans", "Meiryo", sans-serif;
+    background: radial-gradient(circle at top, #2b3f70 0%, #142344 42%, #091224 100%);
+    color: #ffffff;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .app {
+    width: min(96vw, 1800px);
+    height: min(96vh, 1012px);
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+  }
+
+  .title {
+    flex: 0 0 auto;
+    text-align: center;
+    font-size: clamp(24px, 2.3vw, 52px);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    margin-top: 0.2vh;
+  }
+
+  .top-panel {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5vh;
+    padding: 1.4vh 1.5vw;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(4px);
+  }
+
+  .top-input-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1vw;
+    flex-wrap: wrap;
+  }
+
+  .top-panel label {
+    font-size: clamp(16px, 1.2vw, 28px);
+    font-weight: 800;
+  }
+
+  .top-panel input {
+    width: clamp(100px, 7vw, 160px);
+    height: clamp(44px, 5vh, 68px);
+    border: none;
+    border-radius: 14px;
+    padding: 0 12px;
+    font-size: clamp(22px, 1.8vw, 34px);
+    font-weight: 900;
+    text-align: center;
+    background: #ffffff;
+    color: #1b2747;
+    outline: none;
+  }
+
+  .top-panel .hint {
+    text-align: center;
+    font-size: clamp(12px, 0.85vw, 16px);
+    opacity: 0.95;
+  }
+
+  .main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 23%);
+    gap: 1vw;
+  }
+
+  .left-panel,
+  .right-panel {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(6px);
+    min-height: 0;
+  }
+
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 1.3vh 1vw 1.5vh;
+    min-width: 0;
+  }
+
+  .status-bar {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8vw;
+    margin-bottom: 1vh;
+  }
+
+  .status-box {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 0.9vh 0.7vw;
+    text-align: center;
+    min-height: clamp(64px, 9vh, 110px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .status-label {
+    font-size: clamp(11px, 0.8vw, 16px);
+    opacity: 0.9;
+    margin-bottom: 0.4vh;
+    font-weight: 700;
+  }
+
+  .status-value {
+    font-size: clamp(24px, 2vw, 42px);
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  .wheel-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .pointer {
+    position: absolute;
+    top: 0.4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: clamp(18px, 1.5vw, 28px) solid transparent;
+    border-right: clamp(18px, 1.5vw, 28px) solid transparent;
+    border-bottom: clamp(42px, 5.2vh, 62px) solid #ffd84d;
+    z-index: 6;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
+  }
+
+  .pointer::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -2px;
+    transform: translateX(-50%);
+    width: clamp(22px, 1.5vw, 34px);
+    height: clamp(8px, 0.8vh, 12px);
+    border-radius: 999px;
+    background: #fff4b2;
+  }
+
+  canvas {
+    display: block;
+    width: min(100%, calc(100vh * 0.5));
+    height: min(100%, calc(100vh * 0.5));
+    aspect-ratio: 1 / 1;
+  }
+
+  .center-label {
+    position: absolute;
+    width: min(22%, 190px);
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f5f5f5 38%, #d9d9d9 100%);
+    box-shadow:
+      inset 0 3px 10px rgba(255, 255, 255, 0.9),
+      0 14px 28px rgba(0, 0, 0, 0.24);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+    color: #16213b;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .center-small {
+    font-size: clamp(11px, 0.8vw, 16px);
+    font-weight: 800;
+    margin-bottom: 0.4vh;
+    color: #425070;
+  }
+
+  .center-number {
+    font-size: clamp(38px, 3.6vw, 78px);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .center-sub {
+    margin-top: 0.6vh;
+    font-size: clamp(10px, 0.75vw, 14px);
+    font-weight: 800;
+    color: #5a6786;
+  }
+
+  .controls {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    gap: 0.8vw;
+    flex-wrap: wrap;
+    margin-top: 0.8vh;
+  }
+
+  .controls button {
+    min-width: clamp(130px, 9vw, 220px);
+    height: clamp(46px, 6vh, 68px);
+    border: none;
+    border-radius: 16px;
+    font-size: clamp(19px, 1.4vw, 28px);
+    font-weight: 900;
+    cursor: pointer;
+    color: #ffffff;
+    transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+  }
+
+  .controls button:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  .controls button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .controls button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-start {
+    background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+  }
+
+  .btn-stop {
+    background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+  }
+
+  .btn-reset {
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  }
+
+  .message {
+    flex: 0 0 auto;
+    margin-top: 0.8vh;
+    padding: 1.1vh 1vw;
+    border-radius: 16px;
+    text-align: center;
+    font-size: clamp(14px, 1vw, 19px);
+    font-weight: 900;
+    background: rgba(255, 255, 255, 0.08);
+    min-height: clamp(44px, 5.5vh, 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 1.2vh 0.8vw;
+    min-height: 0;
+  }
+
+  .history-title {
+    flex: 0 0 auto;
+    font-size: clamp(22px, 1.8vw, 38px);
+    font-weight: 900;
+    margin: 0.3vh 0 1vh;
+    text-align: center;
+  }
+
+  .history-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .history-row {
+    display: grid;
+    grid-template-columns: 1fr 90px;
+    align-items: center;
+    gap: 8px;
+    padding: 1vh 0.8vw;
+    border-radius: 14px;
+    margin-bottom: 0.8vh;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .history-row.done {
+    background: rgba(255, 216, 77, 0.18);
+    border: 1px solid rgba(255, 216, 77, 0.32);
+  }
+
+  .history-round {
+    font-size: clamp(16px, 1.1vw, 22px);
+    font-weight: 900;
+  }
+
+  .history-result {
+    font-size: clamp(26px, 1.9vw, 40px);
+    font-weight: 900;
+    text-align: center;
+    color: #ffd84d;
+    min-height: 34px;
+  }
+
+  @media (max-width: 1100px) {
+    html, body {
+      overflow: auto;
+    }
+
+    .app {
+      width: min(96vw, 1400px);
+      height: auto;
+      min-height: 96vh;
+    }
+
+    .main {
+      grid-template-columns: 1fr;
+    }
+
+    .right-panel {
+      min-height: 240px;
+    }
+
+    .history-wrap {
+      max-height: 320px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="title">抽選ルーレットゲーム</div>
+
+  <div class="top-panel">
+    <div class="top-input-row">
+      <label for="participantCount">参加人数</label>
+      <input type="number" id="participantCount" min="1" max="200" value="25">
+    </div>
+    <div class="hint">最初に人数を入れてね。スタートで抽選準備も始まるよ。</div>
+  </div>
+
+  <div class="main">
+    <div class="left-panel">
+      <div class="status-bar">
+        <div class="status-box">
+          <div class="status-label">残り人数</div>
+          <div class="status-value" id="remainingCount">-</div>
+        </div>
+        <div class="status-box">
+          <div class="status-label">現在の回</div>
+          <div class="status-value" id="currentRound">-</div>
+        </div>
+        <div class="status-box">
+          <div class="status-label">最後の当選番号</div>
+          <div class="status-value" id="lastWinner">-</div>
+        </div>
+      </div>
+
+      <div class="wheel-stage">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="900" height="900"></canvas>
+        <div class="center-label">
+          <div class="center-small" id="centerLabelTop">抽選待機中</div>
+          <div class="center-number" id="centerNumber">-</div>
+          <div class="center-sub" id="centerSub">STARTで開始</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startButton" class="btn-start">スタート</button>
+        <button id="stopButton" class="btn-stop" disabled>ストップ</button>
+        <button id="resetButton" class="btn-reset">リセット</button>
+      </div>
+
+      <div class="message" id="messageArea">参加人数を入力してスタート！</div>
+    </div>
+
+    <div class="right-panel">
+      <div class="history-title">抽選結果</div>
+      <div class="history-wrap" id="historyWrap"></div>
+    </div>
+  </div>
+</div>
+
+<audio id="bgmPlayer" src="bgm.mp3" loop preload="auto"></audio>
+
+<script>
+  const participantCountInput = document.getElementById("participantCount");
+  const startButton = document.getElementById("startButton");
+  const stopButton = document.getElementById("stopButton");
+  const resetButton = document.getElementById("resetButton");
+  const historyWrap = document.getElementById("historyWrap");
+  const messageArea = document.getElementById("messageArea");
+  const remainingCount = document.getElementById("remainingCount");
+  const currentRound = document.getElementById("currentRound");
+  const lastWinner = document.getElementById("lastWinner");
+  const centerLabelTop = document.getElementById("centerLabelTop");
+  const centerNumber = document.getElementById("centerNumber");
+  const centerSub = document.getElementById("centerSub");
+  const bgmPlayer = document.getElementById("bgmPlayer");
+
+  const canvas = document.getElementById("wheelCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let totalCount = 0;
+  let remainingNumbers = [];
+  let resultHistory = [];
+  let wheelRotation = 0;
+  let spinVelocity = 0;
+  let animationFrameId = null;
+  let isSpinning = false;
+  let isStopping = false;
+  let currentFocusNumber = null;
+  let audioContext = null;
+  let tickLastTime = 0;
+  let stopProgressValue = 0;
+  let bgmStarted = false;
+
+  const TAU = Math.PI * 2;
+  const POINTER_ANGLE = -Math.PI / 2;
+
+  function normalizeAngle(angle) {
+    let result = angle % TAU;
+    if (result < 0) {
+      result += TAU;
+    }
+    return result;
+  }
+
+  function setMessage(text) {
+    messageArea.textContent = text;
+  }
+
+  function getPalette(index) {
+    const colors = [
+      ["#ff6b6b", "#c92a2a"],
+      ["#ffd43b", "#e0a800"],
+      ["#69db7c", "#2f9e44"],
+      ["#4dabf7", "#1c7ed6"],
+      ["#b197fc", "#7048e8"],
+      ["#ffa94d", "#f76707"],
+      ["#63e6be", "#0ca678"],
+      ["#f783ac", "#d6336c"],
+      ["#74c0fc", "#1971c2"],
+      ["#c0eb75", "#74b816"]
+    ];
+    return colors[index % colors.length];
+  }
+
+  function initAudio() {
+    if (!audioContext) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioContext = new AudioContextClass();
+      }
+    }
+
+    if (audioContext && audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+  }
+
+  function playTone(frequency, durationMs, type, volume) {
+    if (!audioContext) {
+      return;
+    }
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const now = audioContext.currentTime;
+
+    oscillator.type = type || "square";
+    oscillator.frequency.setValueAtTime(frequency, now);
+
+    gainNode.gain.setValueAtTime(0.0001, now);
+    gainNode.gain.exponentialRampToValueAtTime(volume || 0.05, now + 0.005);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + durationMs / 1000 + 0.03);
+  }
+
+  function playSpinTick(nowMs) {
+    let intervalMs = 70;
+    let frequency = 1180;
+    let durationMs = 34;
+    let volume = 0.035;
+
+    if (isStopping) {
+      intervalMs = 65 + stopProgressValue * 340;
+      frequency = 1100 - stopProgressValue * 260;
+      durationMs = 28 + stopProgressValue * 45;
+      volume = 0.034;
+    }
+
+    if (nowMs - tickLastTime >= intervalMs) {
+      tickLastTime = nowMs;
+      playTone(frequency, durationMs, "square", volume);
+    }
+  }
+
+  function playFinalStopTone() {
+    playTone(880, 720, "triangle", 0.085);
+  }
+
+  function tryStartBgm() {
+    bgmPlayer.volume = 0.7;
+
+    if (!bgmStarted) {
+      const playPromise = bgmPlayer.play();
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise.then(function () {
+          bgmStarted = true;
+        }).catch(function () {
+        });
+      } else {
+        bgmStarted = true;
+      }
+    } else if (bgmPlayer.paused) {
+      const resumePromise = bgmPlayer.play();
+      if (resumePromise && typeof resumePromise.then === "function") {
+        resumePromise.catch(function () {
+        });
+      }
+    }
+  }
+
+  function buildNumbers(count) {
+    const numbers = [];
+    let value = 1;
+    while (value <= count) {
+      numbers.push(value);
+      value += 1;
+    }
+    return numbers;
+  }
+
+  function buildHistoryRows(count) {
+    historyWrap.innerHTML = "";
+    let round = 1;
+
+    while (round <= count) {
+      const row = document.createElement("div");
+      row.className = "history-row";
+      row.id = "historyRow" + round;
+
+      const roundLabel = document.createElement("div");
+      roundLabel.className = "history-round";
+      roundLabel.textContent = round + "回目";
+
+      const resultLabel = document.createElement("div");
+      resultLabel.className = "history-result";
+      resultLabel.id = "historyResult" + round;
+      resultLabel.textContent = "-";
+
+      row.appendChild(roundLabel);
+      row.appendChild(resultLabel);
+      historyWrap.appendChild(row);
+
+      round += 1;
+    }
+  }
+
+  function updateStatus() {
+    remainingCount.textContent = totalCount > 0 ? String(remainingNumbers.length) : "-";
+    currentRound.textContent = totalCount > 0 && remainingNumbers.length > 0 ? String(resultHistory.length + 1) : "-";
+    lastWinner.textContent = resultHistory.length > 0 ? String(resultHistory[resultHistory.length - 1]) : "-";
+  }
+
+  function updateCenterDisplay(modeText, numberText, subText) {
+    centerLabelTop.textContent = modeText;
+    centerNumber.textContent = numberText;
+    centerSub.textContent = subText;
+  }
+
+  function createOrResetGame() {
+    const count = Number(participantCountInput.value);
+
+    if (!Number.isInteger(count) || count <= 0) {
+      setMessage("参加人数は1以上の整数を入れてね。");
+      return false;
+    }
+
+    if (count > 200) {
+      setMessage("200人までにしてね。多すぎると盤面が読みにくくなるよ。");
+      return false;
+    }
+
+    totalCount = count;
+    remainingNumbers = buildNumbers(count);
+    resultHistory = [];
+    wheelRotation = 0;
+    spinVelocity = 0.24;
+    isSpinning = false;
+    isStopping = false;
+    currentFocusNumber = remainingNumbers.length > 0 ? remainingNumbers[0] : null;
+    tickLastTime = 0;
+    stopProgressValue = 0;
+
+    buildHistoryRows(count);
+    updateStatus();
+    updateCenterDisplay("抽選待機中", "-", "STARTで開始");
+    setMessage("準備OK！スタートでルーレット開始！");
+    updateButtons();
+    drawWheel();
+    return true;
+  }
+
+  function ensureGameReady() {
+    if (totalCount === 0 || remainingNumbers.length === 0 && resultHistory.length === 0) {
+      return createOrResetGame();
+    }
+    return true;
+  }
+
+  function updateButtons() {
+    if (remainingNumbers.length === 0 && totalCount > 0) {
+      startButton.disabled = true;
+      stopButton.disabled = true;
+      resetButton.disabled = false;
+      return;
+    }
+
+    if (isStopping) {
+      startButton.disabled = true;
+      stopButton.disabled = true;
+      resetButton.disabled = true;
+      return;
+    }
+
+    if (isSpinning) {
+      startButton.disabled = true;
+      stopButton.disabled = false;
+      resetButton.disabled = false;
+      return;
+    }
+
+    startButton.disabled = false;
+    stopButton.disabled = true;
+    resetButton.disabled = false;
+  }
+
+  function getFocusedIndex() {
+    if (remainingNumbers.length === 0) {
+      return -1;
+    }
+
+    const segmentAngle = TAU / remainingNumbers.length;
+    const localPointer = normalizeAngle(POINTER_ANGLE - wheelRotation);
+    const rawIndex = Math.floor(localPointer / segmentAngle);
+    const safeIndex = Math.max(0, Math.min(remainingNumbers.length - 1, rawIndex));
+    return safeIndex;
+  }
+
+  function updateCurrentFocusFromWheel() {
+    const focusIndex = getFocusedIndex();
+    if (focusIndex >= 0) {
+      currentFocusNumber = remainingNumbers[focusIndex];
+      updateCenterDisplay("抽選中", String(currentFocusNumber), "STOPで決定");
+    }
+  }
+
+  function drawWheel() {
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = 380;
+    const innerHighlightRadius = 74;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(wheelRotation);
+
+    if (remainingNumbers.length === 0) {
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, TAU);
+      ctx.fillStyle = "#2f3b59";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(0, 0, radius - 22, 0, TAU);
+      ctx.fillStyle = "#0f172a";
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 58px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("終了", 0, 0);
+
+      ctx.restore();
+      return;
+    }
+
+    const segmentAngle = TAU / remainingNumbers.length;
+    let index = 0;
+
+    while (index < remainingNumbers.length) {
+      const startAngle = -Math.PI / 2 + index * segmentAngle;
+      const endAngle = startAngle + segmentAngle;
+      const colorPair = getPalette(index);
+      const number = remainingNumbers[index];
+
+      const gradient = ctx.createLinearGradient(
+        Math.cos(startAngle) * radius,
+        Math.sin(startAngle) * radius,
+        Math.cos(endAngle) * radius,
+        Math.sin(endAngle) * radius
+      );
+      gradient.addColorStop(0, colorPair[0]);
+      gradient.addColorStop(1, colorPair[1]);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(255,255,255,0.76)";
+      ctx.stroke();
+
+      const centerAngle = startAngle + segmentAngle / 2;
+      const textRadius = radius * 0.73;
+      const textX = Math.cos(centerAngle) * textRadius;
+      const textY = Math.sin(centerAngle) * textRadius;
+
+      ctx.save();
+      ctx.translate(textX, textY);
+      ctx.rotate(centerAngle + Math.PI / 2);
+
+      const fontSize = Math.max(22, Math.min(58, 760 / remainingNumbers.length + 18));
+      ctx.font = "900 " + fontSize + "px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.lineWidth = Math.max(5, fontSize * 0.12);
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.strokeText(String(number), 0, 0);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(String(number), 0, 0);
+      ctx.restore();
+
+      index += 1;
+    }
+
+    ctx.beginPath();
+    ctx.arc(0, 0, innerHighlightRadius, 0, TAU);
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 11, 0, TAU);
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function animationLoop(now) {
+    if (isSpinning && !isStopping) {
+      wheelRotation += spinVelocity;
+      updateCurrentFocusFromWheel();
+      drawWheel();
+      playSpinTick(now);
+      animationFrameId = requestAnimationFrame(animationLoop);
+      return;
+    }
+
+    animationFrameId = null;
+  }
+
+  function startSpin() {
+    if (!ensureGameReady()) {
+      return;
+    }
+
+    if (remainingNumbers.length === 0) {
+      setMessage("もう全員抽選済みだよ。リセットして再スタート！");
+      updateButtons();
+      return;
+    }
+
+    if (isSpinning || isStopping) {
+      return;
+    }
+
+    initAudio();
+    tryStartBgm();
+
+    isSpinning = true;
+    spinVelocity = 0.24;
+    tickLastTime = 0;
+    stopProgressValue = 0;
+
+    updateButtons();
+    updateCurrentFocusFromWheel();
+    setMessage("ルーレット回転中！ここぞでストップ！");
+    updateCenterDisplay("抽選中", String(currentFocusNumber), "STOPで決定");
+
+    if (!animationFrameId) {
+      animationFrameId = requestAnimationFrame(animationLoop);
+    }
+  }
+
+  function pickRandomRemainingNumber() {
+    const index = Math.floor(Math.random() * remainingNumbers.length);
+    return remainingNumbers[index];
+  }
+
+  function getIndexOfNumber(number) {
+    let index = 0;
+    while (index < remainingNumbers.length) {
+      if (remainingNumbers[index] === number) {
+        return index;
+      }
+      index += 1;
+    }
+    return -1;
+  }
+
+  function animateStopToWinner(winner) {
+    const winnerIndex = getIndexOfNumber(winner);
+
+    if (winnerIndex < 0) {
+      isStopping = false;
+      isSpinning = false;
+      updateButtons();
+      setMessage("エラー：当選番号の位置が見つかりませんでした。");
+      return;
+    }
+
+    const segmentAngle = TAU / remainingNumbers.length;
+    const centerAngleOfWinner = -Math.PI / 2 + winnerIndex * segmentAngle + segmentAngle / 2;
+    const desiredRotationMod = normalizeAngle(POINTER_ANGLE - centerAngleOfWinner);
+    const currentNormalized = normalizeAngle(wheelRotation);
+    const extraTurns = TAU * (5 + Math.floor(Math.random() * 3));
+
+    let delta = desiredRotationMod - currentNormalized;
+    if (delta < 0) {
+      delta += TAU;
+    }
+
+    const startRotation = wheelRotation;
+    const finalRotation = wheelRotation + extraTurns + delta;
+    const duration = 3200;
+    const startTime = performance.now();
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function stopFrame(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(progress);
+
+      stopProgressValue = progress;
+      wheelRotation = startRotation + (finalRotation - startRotation) * eased;
+      updateCurrentFocusFromWheel();
+      drawWheel();
+      playSpinTick(now);
+
+      if (progress < 1) {
+        requestAnimationFrame(stopFrame);
+        return;
+      }
+
+      wheelRotation = finalRotation;
+      currentFocusNumber = winner;
+      drawWheel();
+      playFinalStopTone();
+      finalizeWinner(winner);
+    }
+
+    requestAnimationFrame(stopFrame);
+  }
+
+  function finalizeWinner(winner) {
+    resultHistory.push(winner);
+
+    const roundNumber = resultHistory.length;
+    const historyResult = document.getElementById("historyResult" + roundNumber);
+    const historyRow = document.getElementById("historyRow" + roundNumber);
+
+    if (historyResult) {
+      historyResult.textContent = String(winner);
+    }
+
+    if (historyRow) {
+      historyRow.classList.add("done");
+    }
+
+    const nextRemaining = [];
+    let index = 0;
+    while (index < remainingNumbers.length) {
+      if (remainingNumbers[index] !== winner) {
+        nextRemaining.push(remainingNumbers[index]);
+      }
+      index += 1;
+    }
+    remainingNumbers = nextRemaining;
+
+    isSpinning = false;
+    isStopping = false;
+    spinVelocity = 0;
+    stopProgressValue = 0;
+
+    updateStatus();
+    updateCenterDisplay("当選番号", String(winner), "おめでとう！");
+    setMessage(roundNumber + "回目の当選は「" + winner + "」！");
+
+    if (remainingNumbers.length === 0) {
+      drawWheel();
+      startButton.disabled = true;
+      stopButton.disabled = true;
+      resetButton.disabled = false;
+      setMessage("全員の抽選が完了したよ！");
+      updateCenterDisplay("抽選終了", String(winner), "全員抽選済み");
+      return;
+    }
+
+    wheelRotation = normalizeAngle(wheelRotation);
+    drawWheel();
+    updateButtons();
+  }
+
+  function stopSpin() {
+    if (!isSpinning || isStopping) {
+      return;
+    }
+
+    if (remainingNumbers.length === 0) {
+      return;
+    }
+
+    isStopping = true;
+    updateButtons();
+    setMessage("減速中…誰になる！？");
+    updateCenterDisplay("減速中", String(currentFocusNumber), "まもなく決定");
+
+    const winner = pickRandomRemainingNumber();
+
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    animateStopToWinner(winner);
+  }
+
+  function resetGame() {
+    if (isStopping) {
+      return;
+    }
+
+    createOrResetGame();
+  }
+
+  participantCountInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      resetGame();
+    }
+  });
+
+  startButton.addEventListener("click", function () {
+    startSpin();
+  });
+
+  stopButton.addEventListener("click", function () {
+    stopSpin();
+  });
+
+  resetButton.addEventListener("click", function () {
+    resetGame();
+  });
+
+  createOrResetGame();
+</script>
+</body>
+</html>
